@@ -126,12 +126,67 @@ def test():
     article.nlp()
 
     return jsonify(title=article.title,
-                   publishDate=article.publish_date,
+                   publishDate=str(article.publish_date.date()),
                    authors=article.authors,
                    content=article.text,
                    keywords=article.keywords,
                    summary=article.summary)
 
+@app.route('/hello2', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def extract_entities():
+    nltk.download('punkt')
+
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('maxent_ne_chunker')
+    nltk.download('words')
+
+
+    url = request.form.get('url')
+
+    article = Article(url)
+
+    article.download()
+
+    article.parse()
+
+    article.nlp()
+
+    people = []
+    organisations = []
+    GPE = []
+
+    for sent in nltk.sent_tokenize(article.text):
+        for chunk in nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(sent))):
+
+            if hasattr(chunk, 'label'):
+
+                print(chunk.label(), ' '.join(c[0] for c in chunk.leaves()))
+
+                if (chunk.label() == 'PERSON'):
+                    people.append(' '.join(c[0] for c in chunk.leaves()))
+                else:
+                    if (chunk.label() == 'ORGANIZATION'):
+                        organisations.append(' '.join(c[0] for c in chunk.leaves()))
+                    else:
+                        if (chunk.label() == 'GPE'):
+                            GPE.append(' '.join(c[0] for c in chunk.leaves()))
+
+
+    try:
+        publishedDate = str(article.publish_date.date())
+    except:
+        publishedDate = "null"
+
+    return jsonify(title=article.title,
+                   publishDate=publishedDate,
+                   authors=article.authors,
+                   content=article.text,
+                   keywords=article.keywords,
+                   summary=article.summary,
+                   people=people,
+                   organisations=organisations,
+                   gpe=GPE)
 
 if __name__ == '__main__':
     app.run(port='5002')
