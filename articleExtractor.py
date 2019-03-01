@@ -24,6 +24,12 @@ class whitelistedSites(Resource):
         query = conn.execute("select * from whitelist")
         return {'whitelistedSites': [i[1] for i in query.cursor.fetchall()]}
 
+class biasedSites(Resource):
+    def get(self):
+        conn = db_connect.connect()
+        query = conn.execute("select * from biaslinks")
+        return {'biasedSites': [i[1] for i in query.cursor.fetchall()]}
+
 class satiricalSites(Resource):
     def get(self):
         conn = db_connect.connect()
@@ -36,6 +42,12 @@ class blacklistedSites(Resource):
         query = conn.execute("select * from blacklist")
         return {'blacklistedSites': [i[1] for i in query.cursor.fetchall()]}
 
+class fakeNewsSites(Resource):
+    def get(self):
+        conn = db_connect.connect()
+        query = conn.execute("select * from fake")
+        return {'fakeNewsSites': [i[1] for i in query.cursor.fetchall()]}
+
 class keywords(Resource):
     def get(self):
         conn = db_connect.connect()
@@ -43,8 +55,10 @@ class keywords(Resource):
         return {'keywords': [i[1] for i in query.cursor.fetchall()]}
 
 api.add_resource(whitelistedSites, '/whitelistedSites')
+api.add_resource(biasedSites, '/biasedSites')
 api.add_resource(satiricalSites, '/satiricalSites')
 api.add_resource(blacklistedSites, '/blacklistedSites')
+api.add_resource(fakeNewsSites, '/fakeNewsSites')
 
 api.add_resource(keywords, '/keywords')
 
@@ -83,6 +97,19 @@ def test2():
     result = {'whitelistedSites': [i[1] for i in query.cursor.fetchall()]}
     return jsonify(result)
 
+@app.route('/biasedSites', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test9():
+
+    url = request.form.get('url')
+
+    conn = db_connect.connect()
+
+    query = conn.execute("select * from biaslinks where ? LIKE '%' || ADDRESS || '%'", (str(url)))
+
+    result = {'biasedSites': [i[1] for i in query.cursor.fetchall()]}
+    return jsonify(result)
+
 @app.route('/satiricalSites', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def test3():
@@ -107,6 +134,19 @@ def test4():
     query = conn.execute("select * from blacklist where ? LIKE '%' || ADDRESS || '%'", (str(url)))
 
     result = {'blacklistedSites': [i[1] for i in query.cursor.fetchall()]}
+    return jsonify(result)
+
+@app.route('/fakeNewsSites', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test6():
+
+    url = request.form.get('url')
+
+    conn = db_connect.connect()
+
+    query = conn.execute("select * from fake where ? LIKE '%' || ADDRESS || '%'", (str(url)))
+
+    result = {'fakeNewsSites': [i[1] for i in query.cursor.fetchall()]}
     return jsonify(result)
 
 @app.route('/hello', methods=['POST'])
