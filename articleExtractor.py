@@ -8,10 +8,6 @@ import nltk
 import requests
 from flask_cors import CORS, cross_origin
 
-############################################################################################################################################################
-## curl -i -H "Content-Type: application/json" -X POST -d https://www.burytimes.co.uk/news/17359742.cocaine-tragedy-of-loving-mother/ 127.0.0.1:5002/hello
-############################################################################################################################################################
-
 app = Flask(__name__)
 api = Api(app)
 CORS(app, support_credentials=True)
@@ -150,29 +146,6 @@ def test6():
     return jsonify(result)
 
 @app.route('/hello', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def test():
-
-    nltk.download('punkt')
-
-    url = request.form.get('url')
-
-    article = Article(url)
-
-    article.download()
-
-    article.parse()
-
-    article.nlp()
-
-    return jsonify(title=article.title,
-                   publishDate=str(article.publish_date.date()),
-                   authors=article.authors,
-                   content=article.text,
-                   keywords=article.keywords,
-                   summary=article.summary)
-
-@app.route('/hello2', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def extract_entities():
     nltk.download('punkt')
