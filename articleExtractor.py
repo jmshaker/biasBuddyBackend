@@ -1,12 +1,17 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_restful import Resource, Api
 from sqlalchemy import create_engine
 from json import dumps
-from flask import jsonify
 from newspaper import Article
 import nltk
+nltk.download('vader_lexicon')
+import nltk.data
+from nltk import tokenize
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import requests
 from flask_cors import CORS, cross_origin
+
+import json
 
 app = Flask(__name__)
 api = Api(app)
@@ -44,6 +49,12 @@ class fakeNewsSites(Resource):
         query = conn.execute("select * from fake")
         return {'fakeNewsSites': [i[1] for i in query.cursor.fetchall()]}
 
+class sentiment(Resource):
+    def get(self):
+        conn = db_connect.connect()
+        query = conn.execute("select * from keywords")
+        return {'keywords': [i[1] for i in query.cursor.fetchall()]}
+
 class keywords(Resource):
     def get(self):
         conn = db_connect.connect()
@@ -55,8 +66,49 @@ api.add_resource(biasedSites, '/biasedSites')
 api.add_resource(satiricalSites, '/satiricalSites')
 api.add_resource(blacklistedSites, '/blacklistedSites')
 api.add_resource(fakeNewsSites, '/fakeNewsSites')
-
 api.add_resource(keywords, '/keywords')
+
+@app.route('/sentences', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test15():
+
+    content = request.form.get('content')
+
+    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+    sentences = tokenizer.tokenize(content)
+
+    for sentence in sentences:
+
+        if '\n\n' in sentence:
+            
+            sentence = sentence.replace('\n\n', ' ')
+
+    ss = {'sentences': [sentence for sentence in sentences]}
+
+    return jsonify(ss)
+
+@app.route('/sentiment', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test10():
+
+    content = request.form.get('content')
+
+    tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+    sentences = tokenizer.tokenize(content)
+
+    sid = SentimentIntensityAnalyzer()
+
+    for sentence in sentences:
+
+        if '\n\n' in sentence:
+            
+            sentence = sentence.replace('\n\n', ' ')
+
+    x = {'sentiments': [sid.polarity_scores(sentence) for sentence in sentences]}
+
+    return jsonify(x)
 
 @app.route('/keywords', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -72,13 +124,57 @@ def test5():
 
     for i in query.cursor.fetchall():
 
-        if i[1] in text:
+        if i[0] in text.split(): #text
 
             f.append(i)
 
-    result = {'keywords': [i[1] for i in f]}
+    result = {'keywords': [i[0] for i in f]}
 
     return jsonify(result)
+
+@app.route('/keywordsType', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test20():
+
+    types = []
+
+    words = request.form.get('words')
+
+    words = json.loads(words)
+
+    conn = db_connect.connect()
+
+    for word in words:
+
+        query = conn.execute("select TYPE from keywords WHERE WORD = \"%s\";" %(word))
+        
+        response = [i[0] for i in query.cursor.fetchall()]
+
+        types.append(response)
+
+    return jsonify(types)    
+
+@app.route('/keywordsDef', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def test19():
+
+    definitions = []
+
+    words = request.form.get('words')
+
+    words = json.loads(words)
+
+    conn = db_connect.connect()
+
+    for word in words:
+
+        query = conn.execute("select DEFINITION from keywords WHERE WORD = \"%s\";" %(word))
+        
+        response = [i[0] for i in query.cursor.fetchall()]
+
+        definitions.append(response)
+
+    return jsonify(definitions)    
 
 @app.route('/whitelistedSites', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -148,12 +244,6 @@ def test6():
 @app.route('/hello', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def extract_entities():
-    nltk.download('punkt')
-
-    nltk.download('averaged_perceptron_tagger')
-    nltk.download('maxent_ne_chunker')
-    nltk.download('words')
-
 
     url = request.form.get('url')
 
@@ -203,3 +293,11 @@ def extract_entities():
 
 if __name__ == '__main__':
     app.run(port='5002')
+
+    nltk.download('punkt')
+
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('maxent_ne_chunker')
+    nltk.download('words')
+
+    nltk.downloader.download('vader_lexicon')
