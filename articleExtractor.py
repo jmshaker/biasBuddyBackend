@@ -1,29 +1,25 @@
+import flask
+import nltk
+import nltk.data
+import requests
+import json
+
 from flask import Flask, request, jsonify
 from flask_restful import Resource, Api
 from sqlalchemy import create_engine
 from json import dumps
 from newspaper import Article
-import nltk
-nltk.download('vader_lexicon')
-import nltk.data
 from nltk import tokenize
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import requests
 from flask_cors import CORS, cross_origin
 
-import json
+nltk.download('vader_lexicon')
 
 app = Flask(__name__)
 api = Api(app)
 CORS(app, support_credentials=True)
 
-db_connect = create_engine('sqlite:///test.db')
-
-class whitelistedSites(Resource):
-    def get(self):
-        conn = db_connect.connect()
-        query = conn.execute("select * from whitelist")
-        return {'whitelistedSites': [i[1] for i in query.cursor.fetchall()]}
+db_connect = create_engine('sqlite:///test2.db')
 
 class biasedSites(Resource):
     def get(self):
@@ -36,12 +32,6 @@ class satiricalSites(Resource):
         conn = db_connect.connect()
         query = conn.execute("select * from satirical")
         return {'satiricalSites': [i[1] for i in query.cursor.fetchall()]}
-
-class blacklistedSites(Resource):
-    def get(self):
-        conn = db_connect.connect()
-        query = conn.execute("select * from blacklist")
-        return {'blacklistedSites': [i[1] for i in query.cursor.fetchall()]}
 
 class fakeNewsSites(Resource):
     def get(self):
@@ -61,10 +51,8 @@ class keywords(Resource):
         query = conn.execute("select * from keywords")
         return {'keywords': [i[1] for i in query.cursor.fetchall()]}
 
-api.add_resource(whitelistedSites, '/whitelistedSites')
 api.add_resource(biasedSites, '/biasedSites')
 api.add_resource(satiricalSites, '/satiricalSites')
-api.add_resource(blacklistedSites, '/blacklistedSites')
 api.add_resource(fakeNewsSites, '/fakeNewsSites')
 api.add_resource(keywords, '/keywords')
 
@@ -124,7 +112,7 @@ def test5():
 
     for i in query.cursor.fetchall():
 
-        if i[0] in text.split(): #text
+        if i[0] in text.split():
 
             f.append(i)
 
@@ -174,20 +162,7 @@ def test19():
 
         definitions.append(response)
 
-    return jsonify(definitions)    
-
-@app.route('/whitelistedSites', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def test2():
-
-    url = request.form.get('url')
-
-    conn = db_connect.connect()
-
-    query = conn.execute("select * from whitelist where ? LIKE '%' || ADDRESS || '%'", (str(url)))
-
-    result = {'whitelistedSites': [i[1] for i in query.cursor.fetchall()]}
-    return jsonify(result)
+    return jsonify(definitions)
 
 @app.route('/biasedSites', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -199,7 +174,8 @@ def test9():
 
     query = conn.execute("select * from biaslinks where ? LIKE '%' || ADDRESS || '%'", (str(url)))
 
-    result = {'biasedSites': [i[1] for i in query.cursor.fetchall()]}
+    result = {'biasedSites': [i[0] for i in query.cursor.fetchall()]}
+
     return jsonify(result)
 
 @app.route('/satiricalSites', methods=['POST'])
@@ -212,20 +188,8 @@ def test3():
 
     query = conn.execute("select * from satirical where ? LIKE '%' || ADDRESS || '%'", (str(url)))
 
-    result = {'satiricalSites': [i[1] for i in query.cursor.fetchall()]}
-    return jsonify(result)
+    result = {'satiricalSites': [i[0] for i in query.cursor.fetchall()]}
 
-@app.route('/blacklistedSites', methods=['POST'])
-@cross_origin(supports_credentials=True)
-def test4():
-
-    url = request.form.get('url')
-
-    conn = db_connect.connect()
-
-    query = conn.execute("select * from blacklist where ? LIKE '%' || ADDRESS || '%'", (str(url)))
-
-    result = {'blacklistedSites': [i[1] for i in query.cursor.fetchall()]}
     return jsonify(result)
 
 @app.route('/fakeNewsSites', methods=['POST'])
@@ -238,7 +202,8 @@ def test6():
 
     query = conn.execute("select * from fake where ? LIKE '%' || ADDRESS || '%'", (str(url)))
 
-    result = {'fakeNewsSites': [i[1] for i in query.cursor.fetchall()]}
+    result = {'fakeNewsSites': [i[0] for i in query.cursor.fetchall()]}
+
     return jsonify(result)
 
 @app.route('/hello', methods=['POST'])
