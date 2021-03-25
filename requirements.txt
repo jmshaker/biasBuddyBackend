@@ -27,7 +27,7 @@ Pillow==5.4.1
 pipenv==2018.11.26
 python-dateutil==2.7.5
 pytz==2018.9
-PyYAML==3.13
+PyYAML==5.4
 requests==2.21.0
 requests-file==1.4.3
 singledispatch==3.4.0.3
